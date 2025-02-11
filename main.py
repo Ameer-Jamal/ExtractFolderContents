@@ -15,9 +15,13 @@ def get_code_context(folder_path):
              ready to be pasted.
     """
     output_text = ""
-    excluded_dirs = {".git", "node_modules", "venv", "__pycache__"}  # Add any directories to exclude here
-    valid_extensions = {".py", ".js", '.ts', ".html", ".css", ".txt", ".json", ".md", ".java", ".c", ".cpp", ".go",
-                        ".sh"}
+    excluded_dirs = {".git", "node_modules", "venv", "__pycache__", "build", "dist", "target", "out", "bin", "obj",
+                     "coverage", "logs", "tmp", "temp", "cache", ".idea", ".vscode", ".mypy_cache", ".pytest_cache"}
+
+    valid_extensions = {".py", ".js", ".ts", ".html", ".css", ".txt", ".json", ".md", ".java", ".c", ".cpp", ".go",
+                        ".sh", ".rb", ".php", ".swift", ".kt", ".rs", ".r", ".pl", ".lua", ".hs", ".erl", ".ex", ".exs",
+                        ".scala", ".clj", ".cljs", ".groovy", ".sql", ".xml", ".yml", ".yaml", ".ini", ".cfg", ".conf",
+                        ".bat", ".cmd", ".ps1", ".dockerfile", ".tf", ".toml", ".lock"}
 
     for root, dirs, files in os.walk(folder_path):
         dirs[:] = [d for d in dirs if d not in excluded_dirs]  # Modify dirs in-place to prune excluded directories
