@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-# Command Line Variant
 
 import os
 import sys
 import pyperclip
+from shutil import which
+
+VERSION = "1.0.0"
 
 def get_code_context(folder_path):
     output_text = ""
@@ -28,30 +30,71 @@ def get_code_context(folder_path):
                 file_path = os.path.join(root, file)
                 try:
                     with open(file_path, 'r', encoding='utf-8') as f:
-                        file_content = f.read()
+                        lines = f.readlines()
+                        file_content = ''.join(lines)
                         output_text += f"\n\n--- FILE: {file_path} ---\n\n{file_content}"
+
+                        # Preview: first 20 lines only
+                        preview = ''.join(lines[:20]).rstrip()
+                        print(f"\n📄 Preview of {file_path} (first 20 lines):\n{'-' * 60}\n{preview}\n{'-' * 60}")
                 except UnicodeDecodeError:
                     print(f"Skipping binary/non-text file: {file_path}")
                 except Exception as e:
                     print(f"Error reading {file_path}: {e}")
-
     return output_text
 
+def maybe_offer_path_install():
+    if which("copyDir") is None:
+        response = input("❓ 'copyDir' not found in PATH. Add it now? [y/N] ").strip().lower()
+        if response == 'y':
+            target_path = os.path.expanduser("~/bin/copyDir")
+            os.makedirs(os.path.dirname(target_path), exist_ok=True)
+            with open(target_path, 'w') as f_out:
+                with open(__file__, 'r') as f_in:
+                    f_out.write(f_in.read())
+            os.chmod(target_path, 0o755)
+            print(f"✅ Installed at {target_path}")
+            print("🔄 Please restart your terminal or run:\n    export PATH=\"$HOME/bin:$PATH\"")
+        else:
+            print("ℹ️ Skipping PATH installation.")
+
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: copyDir <folder_path>")
-        sys.exit(1)
+    if len(sys.argv) == 2:
+        arg = sys.argv[1].strip().lower()
 
-    folder_to_copy = sys.argv[1]
+        if arg in {"-h", "--help"}:
+            print("Usage: copyDir <folder_path|pwd|.>\nCopies code files into clipboard from given folder.")
+            sys.exit(0)
 
-    if not os.path.isdir(folder_to_copy):
-        print(f"Error: '{folder_to_copy}' is not a valid directory.")
-        sys.exit(1)
+        if arg in {"-v", "--version"}:
+            print(f"copyDir version {VERSION}")
+            sys.exit(0)
 
-    all_text = get_code_context(folder_to_copy)
-    if all_text:
-        pyperclip.copy(all_text)
-        print(all_text)
-        print("\n✅ Content copied to clipboard.")
+        folder_to_copy = os.getcwd() if arg in {"pwd", "."} else arg
+
+        if not os.path.isdir(folder_to_copy):
+            print(f"❌ Error: '{folder_to_copy}' is not a valid directory.")
+            sys.exit(1)
+
+        all_text = get_code_context(folder_to_copy)
+        if all_text:
+            pyperclip.copy(all_text)
+            print("✅ Content copied to clipboard.")
+        else:
+            print("⚠️ No valid text-based code files found.")
+
     else:
-        print("No valid text-based code files found.")
+        maybe_offer_path_install()
+        folder_to_copy = input("📁 Enter folder path: ").strip()
+        if folder_to_copy in {"pwd", "."}:
+            folder_to_copy = os.getcwd()
+
+        if not os.path.isdir(folder_to_copy):
+            print(f"❌ '{folder_to_copy}' is not a valid directory.")
+        else:
+            all_text = get_code_context(folder_to_copy)
+            if all_text:
+                pyperclip.copy(all_text)
+                print("✅ Content copied to clipboard.")
+            else:
+                print("⚠️ No valid text-based code files found.")
