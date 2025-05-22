@@ -7,7 +7,7 @@ from shutil import which
 
 VERSION = "1.0.0"
 
-def get_code_context(folder_path):
+def get_code_context(folder_path, preview_lines=None):
     output_text = ""
     excluded_dirs = {
         ".git", "node_modules", "venv", "__pycache__", "build", "dist", "target",
@@ -33,10 +33,9 @@ def get_code_context(folder_path):
                         lines = f.readlines()
                         file_content = ''.join(lines)
                         output_text += f"\n\n--- FILE: {file_path} ---\n\n{file_content}"
-
-                        # Preview: first 20 lines only
-                        preview = ''.join(lines[:20]).rstrip()
-                        print(f"\n📄 Preview of {file_path} (first 20 lines):\n{'-' * 60}\n{preview}\n{'-' * 60}")
+                        if preview_lines is not None:
+                            preview = ''.join(lines[:preview_lines]).rstrip()
+                            print(f"\n📄 Preview of {file_path} (first {preview_lines} lines):\n{'-' * 60}\n{preview}\n{'-' * 60}")
                 except UnicodeDecodeError:
                     print(f"Skipping binary/non-text file: {file_path}")
                 except Exception as e:
@@ -59,30 +58,46 @@ def maybe_offer_path_install():
             print("ℹ️ Skipping PATH installation.")
 
 if __name__ == "__main__":
-    if len(sys.argv) == 2:
-        arg = sys.argv[1].strip().lower()
+    preview_lines = None
+    folder_to_copy = None
 
-        if arg in {"-h", "--help"}:
-            print("Usage: copyDir <folder_path|pwd|.>\nCopies code files into clipboard from given folder.")
-            sys.exit(0)
+    args = sys.argv[1:]
 
-        if arg in {"-v", "--version"}:
-            print(f"copyDir version {VERSION}")
-            sys.exit(0)
+    if "--help" in args or "-h" in args:
+        print("Usage: copyDir <folder_path|pwd|.> [--showContent [N]]")
+        print("Copies code files into clipboard from the given folder.")
+        print("--showContent         Show full file content")
+        print("--showContent N       Show first N lines only")
+        sys.exit(0)
 
+    if "--version" in args or "-v" in args:
+        print(f"copyDir version {VERSION}")
+        sys.exit(0)
+
+    if "--showContent" in args:
+        idx = args.index("--showContent")
+        try:
+            val = args[idx + 1]
+            preview_lines = int(val)
+            args.pop(idx + 1)
+        except (IndexError, ValueError):
+            preview_lines = 9999999  # Effectively "full file"
+        args.pop(idx)
+
+    if len(args) == 1:
+        arg = args[0].strip().lower()
         folder_to_copy = os.getcwd() if arg in {"pwd", "."} else arg
 
+    if folder_to_copy:
         if not os.path.isdir(folder_to_copy):
             print(f"❌ Error: '{folder_to_copy}' is not a valid directory.")
             sys.exit(1)
-
-        all_text = get_code_context(folder_to_copy)
+        all_text = get_code_context(folder_to_copy, preview_lines)
         if all_text:
             pyperclip.copy(all_text)
             print("✅ Content copied to clipboard.")
         else:
             print("⚠️ No valid text-based code files found.")
-
     else:
         maybe_offer_path_install()
         folder_to_copy = input("📁 Enter folder path: ").strip()
@@ -92,7 +107,7 @@ if __name__ == "__main__":
         if not os.path.isdir(folder_to_copy):
             print(f"❌ '{folder_to_copy}' is not a valid directory.")
         else:
-            all_text = get_code_context(folder_to_copy)
+            all_text = get_code_context(folder_to_copy, preview_lines)
             if all_text:
                 pyperclip.copy(all_text)
                 print("✅ Content copied to clipboard.")

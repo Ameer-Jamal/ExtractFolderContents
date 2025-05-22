@@ -49,6 +49,14 @@ After that, just run:
 copyDir .
 ```
 
+## Command Arguments example : 
+```bash
+copyDir .                        # Copy current file No preview
+copyDir . --showContent          # Show full content
+copyDir . --showContent 20       # Show first 20 lines per file
+copyDir pwd --showContent 50     # Show first 50 lines in current folder
+```
+
 ## 🧪 Dependencies
 Python 3
 

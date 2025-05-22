@@ -33,7 +33,9 @@ def install():
         sys.exit(1)
 
     os.makedirs(INSTALL_PATH, exist_ok=True)
-    shutil.copyfile(SOURCE_FILE, TARGET_FILE)
+    if os.path.exists(TARGET_FILE) or os.path.islink(TARGET_FILE):
+        os.remove(TARGET_FILE)
+    os.symlink(os.path.abspath(SOURCE_FILE), TARGET_FILE)
     os.chmod(TARGET_FILE, 0o755)
 
     if INSTALL_PATH not in os.environ.get("PATH", ""):
