@@ -44,18 +44,19 @@ def get_code_context(folder_path, preview_lines=None):
 
 def maybe_offer_path_install():
     if which("copyDir") is None:
-        response = input("❓ 'copyDir' not found in PATH. Add it now? [y/N] ").strip().lower()
-        if response == 'y':
-            target_path = os.path.expanduser("~/bin/copyDir")
-            os.makedirs(os.path.dirname(target_path), exist_ok=True)
-            with open(target_path, 'w') as f_out:
-                with open(__file__, 'r') as f_in:
-                    f_out.write(f_in.read())
-            os.chmod(target_path, 0o755)
-            print(f"✅ Installed at {target_path}")
-            print("🔄 Please restart your terminal or run:\n    export PATH=\"$HOME/bin:$PATH\"")
-        else:
-            print("ℹ️ Skipping PATH installation.")
+        if sys.stdin.isatty():
+            response = input("❓ 'copyDir' not found in PATH. Add it now? [y/N] ").strip().lower()
+            if response == 'y':
+                target_path = os.path.expanduser("~/bin/copyDir")
+                os.makedirs(os.path.dirname(target_path), exist_ok=True)
+                with open(target_path, 'w') as f_out:
+                    with open(__file__, 'r') as f_in:
+                        f_out.write(f_in.read())
+                os.chmod(target_path, 0o755)
+                print(f"✅ Installed at {target_path}")
+                print("🔄 Please restart your terminal or run:\n    export PATH=\"$HOME/bin:$PATH\"")
+            else:
+                print("ℹ️ Skipping PATH installation.")
 
 if __name__ == "__main__":
     preview_lines = None
@@ -88,6 +89,7 @@ if __name__ == "__main__":
         arg = args[0].strip().lower()
         folder_to_copy = os.getcwd() if arg in {"pwd", "."} else arg
 
+    # If a valid path is already given, proceed non-interactively
     if folder_to_copy:
         if not os.path.isdir(folder_to_copy):
             print(f"❌ Error: '{folder_to_copy}' is not a valid directory.")
@@ -98,7 +100,8 @@ if __name__ == "__main__":
             print("✅ Content copied to clipboard.")
         else:
             print("⚠️ No valid text-based code files found.")
-    else:
+    # Otherwise, only allow prompting in interactive environments
+    elif sys.stdin.isatty():
         maybe_offer_path_install()
         folder_to_copy = input("📁 Enter folder path: ").strip()
         if folder_to_copy in {"pwd", "."}:
